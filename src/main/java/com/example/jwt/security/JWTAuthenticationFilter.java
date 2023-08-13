@@ -20,7 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
-public class JWTAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private Logger logger = LoggerFactory.getLogger(OncePerRequestFilter.class);
     @Autowired
@@ -30,22 +30,29 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private UserDetailsService userDetailsService;
 
-
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        // To fetch Authorization= Bearer jfdsjfkjglsjslf
-        String requestHeader=request.getHeader("Authorization");
-        logger.info("Header : {}" + requestHeader);
+//        try {
+//            Thread.sleep(500);
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
+        //Authorization
 
-        String username=null;
-        String token=null;
+        String requestHeader = request.getHeader("Authorization");
+        //Bearer 2352345235sdfrsfgsdfsdf
+        logger.info(" Header :  {}", requestHeader);
+        String username = null;
+        String token = null;
+        if (requestHeader != null && requestHeader.startsWith("Bearer")) {
+            //looking good
+            token = requestHeader.substring(7);
+            try {
 
-        if(requestHeader!=null && requestHeader.startsWith("Bearer")){
-            token=requestHeader.substring(7);
-            try{
-                username= jwtHelper.getUsernameFromToken(token);
-            }catch (IllegalArgumentException e) {
+                username = this.jwtHelper.getUsernameFromToken(token);
+
+            } catch (IllegalArgumentException e) {
                 logger.info("Illegal Argument while fetching the username !!");
                 e.printStackTrace();
             } catch (ExpiredJwtException e) {
@@ -59,12 +66,15 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
             }
 
-        }else{
-            logger.info("Invalid Header info!!");
+
+        } else {
+            logger.info("Invalid Header Value !! ");
         }
 
-        //If username is not null and username is not authenticated then user will be authenticated
-        if(username!=null && SecurityContextHolder.getContext().getAuthentication()==null){
+
+        //
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
 
             //fetch user detail from username
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
@@ -81,9 +91,10 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
                 logger.info("Validation fails !!");
             }
 
-            filterChain.doFilter(request, response);
 
         }
+
+        filterChain.doFilter(request, response);
 
 
     }
